@@ -41,7 +41,6 @@ export default function ChatInterface({
   const [extractedDocument, setExtractedDocument] = useState<ExtractedDocument | null>(null);
   const [, setIsExtracting] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
-  const [researchMode, setResearchMode] = useState(false);
   const [showTransparencyLog, setShowTransparencyLog] = useState(false);
   const [lastAsrConfidence, setLastAsrConfidence] = useState<number | null>(null);
   const [expandedEvidence, setExpandedEvidence] = useState<Set<string>>(new Set());
@@ -248,16 +247,6 @@ export default function ChatInterface({
             : undefined,
         asrConfidence: lastAsrConfidence,
         interactionReliability,
-        researchDetails: researchMode
-          ? {
-              alpha: 0.65,
-              lexicalWeight: 0.4,
-              semanticWeight: 0.6,
-              evidenceRanking: kanoonResults.length > 0
-                ? 'Kanoon rank + BM25 (simulated)'
-                : 'BM25 + dense embeddings (simulated)',
-            }
-          : undefined,
       });
 
       setMessages((prev) => [...prev, botMessage]);
@@ -498,25 +487,27 @@ export default function ChatInterface({
         </div>
 
         <div className="flex items-center gap-2">
-          <label className={`flex items-center gap-1 text-xs cursor-pointer ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            <input type="checkbox" checked={researchMode} onChange={() => setResearchMode(!researchMode)} className="rounded" />
-            <span className="hidden sm:inline">Research</span>
-          </label>
+          {/* TTS mute/unmute — clearly labelled */}
           <button
             onClick={() => setTtsEnabled(!ttsEnabled)}
-            title={ttsEnabled ? 'Disable voice output' : 'Enable voice output'}
-            className={`p-2 rounded-lg transition-colors ${ttsEnabled ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' : darkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+              ttsEnabled
+                ? darkMode ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-gray-100 border-gray-300 text-gray-700'
+                : darkMode ? 'bg-red-900/30 border-red-700 text-red-300' : 'bg-red-50 border-red-200 text-red-600'
+            }`}
+            title={ttsEnabled ? 'Mute voice output' : 'Unmute voice output'}
           >
             {ttsEnabled ? (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
               </svg>
             )}
+            <span>{ttsEnabled ? 'Mute' : 'Unmuted'}</span>
           </button>
           <button onClick={onToggleDarkMode} className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
             {darkMode ? (
@@ -751,85 +742,53 @@ export default function ChatInterface({
         </div>
       )}
 
-      {/* ── Transparency Log ─────────────────────────────────────────── */}
-      <div className={`px-4 py-2 border-t ${darkMode ? 'bg-gray-900/80 border-gray-800' : 'bg-white border-gray-200'}`}>
+      {/* ── How was this answered? (Transparency) ───────────────────── */}
+      <div className={`px-4 py-2 border-t ${darkMode ? 'bg-gray-900/60 border-gray-800' : 'bg-white border-gray-100'}`}>
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => setShowTransparencyLog(!showTransparencyLog)}
-            className={`w-full flex items-center justify-between text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}
+            className={`w-full flex items-center justify-between text-[11px] font-medium ${darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'} transition-colors`}
           >
-            <span className="flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              System Transparency Log
+              How was this answered?
             </span>
-            <span className="flex items-center gap-2">
-              {researchMode && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 font-medium">
-                  Research Mode ON
-                </span>
-              )}
-              <svg className={`w-3.5 h-3.5 transition-transform ${showTransparencyLog ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </span>
+            <svg className={`w-3 h-3 transition-transform ${showTransparencyLog ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {showTransparencyLog && (
-            <div className={`mt-2 rounded-lg border px-3 py-2.5 text-xs ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'}`}>
+            <div className={`mt-2 rounded-lg border px-3 py-2.5 text-[11px] ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'}`}>
               {lastTransparencyLog ? (
-                <>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <div>
-                      <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Language Detected: </span>
-                      <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.languageDetected.toUpperCase()}</span>
-                    </div>
-                    <div>
-                      <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Translation Applied: </span>
-                      <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.translationApplied ? 'Yes' : 'No'}</span>
-                    </div>
-                    <div>
-                      <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Retrieval Method: </span>
-                      <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.retrievalMethod}</span>
-                    </div>
-                    <div>
-                      <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Evidence Units: </span>
-                      <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.evidenceUnitsSelected}</span>
-                    </div>
-                    {lastTransparencyLog.templateUsed && (
-                      <div className="col-span-2">
-                        <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Template Used: </span>
-                        <span className={darkMode ? 'text-amber-400' : 'text-amber-700'}>{lastTransparencyLog.templateUsed}</span>
-                      </div>
-                    )}
-                    {typeof lastTransparencyLog.asrConfidence === 'number' && (
-                      <div className="col-span-2">
-                        <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>ASR Confidence: </span>
-                        <span>{lastTransparencyLog.asrConfidence.toFixed(2)}</span>
-                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          lastTransparencyLog.interactionReliability === 'High' ? 'bg-emerald-100 text-emerald-700' :
-                          lastTransparencyLog.interactionReliability === 'Medium' ? 'bg-amber-100 text-amber-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {lastTransparencyLog.interactionReliability} Reliability
-                        </span>
-                      </div>
-                    )}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div>
+                    <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Language: </span>
+                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.languageDetected.toUpperCase()}</span>
                   </div>
-                  {researchMode && lastTransparencyLog.researchDetails && (
-                    <div className={`mt-2 pt-2 border-t border-dashed ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                      <p className={`font-semibold mb-1 ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Research Mode Details</p>
-                      <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
-                        α = {lastTransparencyLog.researchDetails.alpha.toFixed(2)} · Lexical {Math.round(lastTransparencyLog.researchDetails.lexicalWeight * 100)}% · Semantic {Math.round(lastTransparencyLog.researchDetails.semanticWeight * 100)}%
-                      </p>
-                      <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Ranking: {lastTransparencyLog.researchDetails.evidenceRanking}</p>
+                  <div>
+                    <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Retrieval: </span>
+                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.retrievalMethod}</span>
+                  </div>
+                  <div>
+                    <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Legal Clauses Used: </span>
+                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>{lastTransparencyLog.evidenceUnitsSelected}</span>
+                  </div>
+                  {typeof lastTransparencyLog.asrConfidence === 'number' && (
+                    <div>
+                      <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Voice Confidence: </span>
+                      <span className={`font-semibold ${
+                        lastTransparencyLog.interactionReliability === 'High' ? 'text-emerald-500' :
+                        lastTransparencyLog.interactionReliability === 'Medium' ? 'text-amber-500' : 'text-red-500'
+                      }`}>{lastTransparencyLog.interactionReliability}</span>
                     </div>
                   )}
-                </>
+                </div>
               ) : (
                 <p className={darkMode ? 'text-gray-500' : 'text-gray-400'}>
-                  Ask a legal question to see retrieval and transparency details here.
+                  Ask a legal question to see how the answer was generated.
                 </p>
               )}
             </div>
@@ -840,41 +799,53 @@ export default function ChatInterface({
       {/* ── Quick Action Buttons ─────────────────────────────────────── */}
       {!activeWizard && (
         <div className={`px-4 py-2.5 border-t ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+          <p className={`text-[10px] mb-2 font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Quick actions</p>
           <div className="flex flex-wrap gap-2">
+            {/* Generate Documents — same style, distinct icon colors */}
             <button
               onClick={startRTIWizard}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all shadow-sm"
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               {getTranslation(language, 'rtiApplication')}
             </button>
             <button
               onClick={startComplaintWizard}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-all shadow-sm"
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              Draft Complaint Letter
+              Complaint Letter
             </button>
+            {/* Quick legal topic queries — same style */}
             <button
               onClick={() => sendMessage(getTranslation(language, 'domesticViolence'))}
-              className={`flex-1 min-w-[100px] text-xs px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'}`}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
+              <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
               {getTranslation(language, 'domesticViolence')}
             </button>
             <button
               onClick={() => sendMessage(getTranslation(language, 'landDispute'))}
-              className={`flex-1 min-w-[100px] text-xs px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'}`}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
+              <svg className="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
               {getTranslation(language, 'landDispute')}
             </button>
             <button
               onClick={() => sendMessage(getTranslation(language, 'unpaidWages'))}
-              className={`flex-1 min-w-[100px] text-xs px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 border-gray-600' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'}`}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
             >
+              <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {getTranslation(language, 'unpaidWages')}
             </button>
           </div>
