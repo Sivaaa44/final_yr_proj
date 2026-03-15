@@ -114,8 +114,9 @@ export default function ChatInterface({
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
-        const confidence =
-          typeof event.results[0][0].confidence === 'number' ? event.results[0][0].confidence : 0.87;
+        const rawConfidence = event.results[0][0].confidence;
+        // Web Speech API sometimes returns exactly 0 confidence, so we fallback to a high baseline if it actually matched text
+        const confidence = typeof rawConfidence === 'number' && rawConfidence > 0 ? rawConfidence : 0.82;
         setInputText(transcript || '');
         setLastAsrConfidence(confidence);
         setIsListening(false);
