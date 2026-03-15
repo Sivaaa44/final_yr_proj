@@ -15,6 +15,7 @@ export interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   isTyping?: boolean;
+  isAiResponse?: boolean; // true for structured AI responses with evidence panel
   source?: string; // Kanoon source info (e.g., "Section 498A IPC – Dowry Harassment")
   intent?: DetectedIntent;
   evidence?: MessageEvidenceSnippet[];
